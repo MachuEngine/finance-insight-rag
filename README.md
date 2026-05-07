@@ -23,6 +23,7 @@ downloader → document_loader   → Qdrant (k=10)        → GPT-4o-mini → Fa
 | 검색 | `src/retrieval/advanced_retriever.py` | Two-Stage: Qdrant → Cohere `rerank-english-v3.0` |
 | 생성 | `src/generation/answer_generator.py` | GPT-4o-mini, temperature=0, 할루시네이션 방지 프롬프트 |
 | API | `src/api/main.py` | FastAPI + 컬렉션별 파이프라인 lazy cache |
+| 평가 | `src/evaluation/evaluator.py` | RAGAS — Faithfulness / Answer Relevancy / Context Precision |
 
 ## 폴더 구조
 
@@ -43,6 +44,8 @@ finance-insight-rag/
 │   │   └── advanced_retriever.py
 │   ├── generation/
 │   │   └── answer_generator.py
+│   ├── evaluation/
+│   │   └── evaluator.py
 │   └── api/
 │       └── main.py
 ├── qdrant_local/         # Qdrant 로컬 DB (git 제외)
@@ -201,6 +204,74 @@ curl http://localhost:8000/health
 
 Swagger UI: http://localhost:8000/docs
 
+## 평가 (Evaluation)
+
+### 평가 지표
+
+| 지표 | 설명 | 범위 |
+|------|------|------|
+| **Faithfulness** | 답변이 검색된 컨텍스트에만 근거하는가 | 0 → 1 (높을수록 좋음) |
+| **Answer Relevancy** | 답변이 질문과 얼마나 관련 있는가 | 0 → 1 (높을수록 좋음) |
+| **Context Precision** | 검색된 컨텍스트가 질문에 얼마나 적절한가 | 0 → 1 (높을수록 좋음) |
+
+세 지표 모두 **reference-free** — ground truth 없이 측정 가능합니다.  
+`EvalCase.ground_truth`를 채우면 향후 reference-based 지표 추가에 활용할 수 있습니다.
+
+### 기본 실행
+
+`TESLA_TEST_CASES` (5개 질문)로 `tesla_2023` 컬렉션을 평가합니다.
+
+```bash
+python -m src.evaluation.evaluator
+```
+
+```
+────────────────────────────────────────────────────────────────────────
+  RAGAS Evaluation Results  —  collection: tesla_2023
+────────────────────────────────────────────────────────────────────────
+                  user_input  faithfulness  answer_relevancy  llm_context_precision_without_reference
+    Tesla의 2023년 총 매출은 얼마인가?           0.00          0.75                             0.83
+2023년 Tesla의 차량 인도 대수는 얼마인가?           1.00          0.58                             0.83
+     Tesla의 2023년 순이익은 얼마인가?           1.00          0.00                             0.00
+    Cybertruck은 언제 생산을 시작했나?           1.00          0.77                             1.00
+     Tesla의 주요 사업 리스크는 무엇인가?           1.00          0.65                             0.33
+
+────────────────────────────────────────────────────────────────────────
+  평균 점수 (Mean Scores)
+────────────────────────────────────────────────────────────────────────
+  faithfulness                                      0.8000
+  answer_relevancy                                  0.5494
+  llm_context_precision_without_reference           0.6000
+────────────────────────────────────────────────────────────────────────
+```
+
+### 커스텀 테스트 케이스
+
+```python
+from src.evaluation.evaluator import RAGEvaluator, EvalCase
+
+cases = [
+    EvalCase(
+        question="Tesla의 Autopilot 기능은 무엇인가?",
+        ground_truth="Tesla의 Autopilot은 ...",  # 선택 사항
+    ),
+    EvalCase(question="2023년 Tesla의 R&D 비용은?"),
+]
+
+evaluator = RAGEvaluator(collection_name="tesla_2023")
+result = evaluator.run(cases)
+print(result.to_pandas())
+```
+
+### 다른 컬렉션 평가
+
+```python
+evaluator = RAGEvaluator(collection_name="finance_reports")
+result = evaluator.run([
+    EvalCase(question="Berkshire의 2023년 운영 수익은?"),
+])
+```
+
 ## 기술 스택
 
 - **LLM**: OpenAI GPT-4o-mini
@@ -209,3 +280,4 @@ Swagger UI: http://localhost:8000/docs
 - **Reranker**: Cohere rerank-english-v3.0
 - **Framework**: LangChain, FastAPI
 - **PDF 파싱**: PyMuPDF
+- **평가**: RAGAS 0.4.x
