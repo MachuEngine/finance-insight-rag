@@ -6,6 +6,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
+from qdrant_client import QdrantClient
+
 from dotenv import load_dotenv
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
@@ -41,8 +43,16 @@ class FinanceRAGPipeline:
     If omitted, a default FinanceRetriever is created internally.
     """
 
-    def __init__(self, retriever: Optional[FinanceRetriever] = None) -> None:
-        _retriever = retriever if retriever is not None else FinanceRetriever()
+    def __init__(
+        self,
+        retriever: Optional[FinanceRetriever] = None,
+        collection_name: str = "finance_reports",
+        qdrant_client: Optional[QdrantClient] = None,
+    ) -> None:
+        _retriever = retriever if retriever is not None else FinanceRetriever(
+            collection_name=collection_name,
+            client=qdrant_client,
+        )
 
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 

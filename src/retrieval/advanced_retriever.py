@@ -3,6 +3,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 from langchain.retrievers import ContextualCompressionRetriever
@@ -28,7 +29,11 @@ class FinanceRetriever:
     Stage 2 — Cohere: reranks candidates and returns the top_n=3 most relevant.
     """
 
-    def __init__(self, collection_name: str = _COLLECTION_NAME) -> None:
+    def __init__(
+        self,
+        collection_name: str = _COLLECTION_NAME,
+        client: Optional[QdrantClient] = None,
+    ) -> None:
         cohere_api_key = os.getenv("COHERE_API_KEY")
         if not cohere_api_key:
             raise EnvironmentError(
@@ -36,7 +41,8 @@ class FinanceRetriever:
                 "https://cohere.com 에서 API 키를 발급받아 .env에 추가하세요."
             )
 
-        client = QdrantClient(path=_QDRANT_PATH)
+        # Accept an injected client to avoid opening a second local Qdrant instance
+        client = client or QdrantClient(path=_QDRANT_PATH)
         embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
         vector_store = QdrantVectorStore(
