@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional, Union
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
 
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).parents[2]
 _QDRANT_PATH = str(_PROJECT_ROOT / "qdrant_local")
+_STATIC_PATH = _PROJECT_ROOT / "static"
 
 # ---------------------------------------------------------------------------
 # Pydantic models
@@ -102,10 +105,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.mount("/static", StaticFiles(directory=_STATIC_PATH), name="static")
+
 
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
+@app.get("/", include_in_schema=False)
+def root() -> FileResponse:
+    return FileResponse(_STATIC_PATH / "index.html")
+
 
 @app.get("/health", tags=["System"])
 def health() -> dict:
