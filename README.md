@@ -127,6 +127,9 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 서버 기동 후 브라우저에서 http://localhost:8000 으로 접속하면 플레이그라운드 채팅 UI가 열립니다.
 컬렉션 드롭다운에서 검색 대상을 선택하고 질문을 입력하면 답변과 참조 출처를 확인할 수 있습니다.
 
+<img width="1407" height="531" alt="image" src="https://github.com/user-attachments/assets/9ff87a29-f5ba-415e-826a-4385ce332435" />
+
+
 ## API 사용법
 
 | Method | Endpoint | 설명 |
