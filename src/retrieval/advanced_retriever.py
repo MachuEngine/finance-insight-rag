@@ -4,6 +4,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Optional
+from pydantic import SecretStr
 
 from dotenv import load_dotenv
 from langchain.retrievers import ContextualCompressionRetriever
@@ -56,7 +57,7 @@ class FinanceRetriever:
 
         # Stage 2: rerank to top 3 with Cohere
         reranker = CohereRerank(
-            cohere_api_key=cohere_api_key,
+            cohere_api_key=SecretStr(cohere_api_key),
             model="rerank-english-v3.0",
             top_n=3,
         )
