@@ -6,12 +6,11 @@
 ## 아키텍처
 
 ```
-PDF 수집          색인                    검색                   생성            API
-──────────   ──────────────────   ─────────────────────   ─────────────   ────────
-downloader → document_loader   → Qdrant (k=10)        → GPT-4o-mini → FastAPI
-             chunker           → Cohere Rerank (top 3)
-             indexer (OpenAI
-             embedding)
+PDF 수집          색인                        검색                   생성          API / UI
+──────────   ───────────────────────   ─────────────────────   ─────────────   ─────────
+downloader → document_loader         → Qdrant (k=10)        → GPT-4o-mini → FastAPI
+             chunker                 → Cohere Rerank (top 3)
+             indexer (OpenAI embed)
 ```
 
 | 단계 | 모듈 | 핵심 기술 |
@@ -48,6 +47,8 @@ finance-insight-rag/
 │   │   └── evaluator.py
 │   └── api/
 │       └── main.py
+├── static/
+│   └── index.html        # 플레이그라운드 채팅 UI
 ├── qdrant_local/         # Qdrant 로컬 DB (git 제외)
 ├── requirements.txt
 └── .env                  # API 키 (git 제외)
@@ -123,13 +124,17 @@ EOF
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+서버 기동 후 브라우저에서 http://localhost:8000 으로 접속하면 플레이그라운드 채팅 UI가 열립니다.
+컬렉션 드롭다운에서 검색 대상을 선택하고 질문을 입력하면 답변과 참조 출처를 확인할 수 있습니다.
+
 ## API 사용법
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| `GET` | `/health` | 서버 상태 및 로드된 파이프라인 목록 |
+| `GET` | `/` | 플레이그라운드 채팅 UI |
 | `GET` | `/collections` | Qdrant에 존재하는 컬렉션 목록 |
 | `POST` | `/ask` | 질의응답 |
+| `GET` | `/health` | 서버 상태 및 로드된 파이프라인 목록 |
 | `GET` | `/docs` | Swagger UI |
 
 ### 컬렉션 목록 확인
@@ -201,8 +206,6 @@ curl http://localhost:8000/health
   "loaded_pipelines": ["finance_reports", "tesla_2023"]
 }
 ```
-
-Swagger UI: http://localhost:8000/docs
 
 ## 평가 (Evaluation)
 
